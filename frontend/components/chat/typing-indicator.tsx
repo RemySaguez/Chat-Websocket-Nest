@@ -10,10 +10,8 @@ export function TypingIndicator({ names }: TypingIndicatorProps) {
   let text: string;
   if (names.length === 1) {
     text = `${names[0]} est en train d'écrire…`;
-  } else if (names.length === 2) {
-    text = `${names[0]} et ${names[1]} sont en train d'écrire…`;
   } else {
-    text = `Plusieurs personnes sont en train d'écrire (${names.join(", ")})…`;
+    text = `${names.length} personnes sont en train d'écrire…`;
   }
 
   return (

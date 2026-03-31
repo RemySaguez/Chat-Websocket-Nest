@@ -50,4 +50,21 @@ export class UsersService {
     });
     return this.usersRepository.save(user);
   }
+
+  async updateProfile(
+    id: string,
+    data: { username?: string; accentColor?: string },
+  ): Promise<User | null> {
+    const user = await this.findById(id);
+    if (!user) {
+      return null;
+    }
+    if (data.username !== undefined) {
+      user.username = data.username.trim();
+    }
+    if (data.accentColor !== undefined) {
+      user.accentColor = data.accentColor;
+    }
+    return this.usersRepository.save(user);
+  }
 }

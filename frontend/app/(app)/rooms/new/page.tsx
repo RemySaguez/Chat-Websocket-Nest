@@ -31,7 +31,7 @@ export default function NewRoomPage() {
             htmlFor="room-invitees"
             className="text-xs font-medium text-[var(--on-surface-variant)]"
           >
-            Inviter des utilisateurs (emails ou pseudos, séparés par des virgules)
+            Inviter des utilisateurs
           </label>
           <textarea
             id="room-invitees"
@@ -40,17 +40,6 @@ export default function NewRoomPage() {
             onChange={(e) => setInvitees(e.target.value)}
           />
         </div>
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={includeHistory}
-            onChange={(e) => setIncludeHistory(e.target.checked)}
-            className="mt-1"
-          />
-          <span>
-            L'invité peut voir l'historique de la discussion avant son arrivée
-          </span>
-        </label>
         <Button type="submit">Créer le salon</Button>
       </form>
     </div>

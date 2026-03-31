@@ -17,5 +17,6 @@ export type ChatMessage = {
   authorName: string;
   authorColor: string;
   text: string;
+  createdAt: string;
   reactions: ChatReaction[];
 };

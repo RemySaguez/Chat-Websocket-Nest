@@ -9,21 +9,28 @@ export default function ProfilePage() {
   const { session, updateProfile } = useAuth();
   const [username, setUsername] = useState(session?.username ?? "");
   const [accentColor, setAccentColor] = useState(session?.accentColor ?? "#5e5e60");
-  const [notifyEmail, setNotifyEmail] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
   if (!session) {
     return null;
   }
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!session) {
       return;
     }
-    updateProfile({
+    setError(null);
+    setPending(true);
+    const result = await updateProfile({
       username: username.trim() || session.username,
       accentColor,
     });
+    setPending(false);
+    if (!result.ok) {
+      setError(result.error ?? "Mise à jour impossible");
+    }
   }
 
   return (
@@ -32,9 +39,14 @@ export default function ProfilePage() {
         Paramètres du profil
       </h1>
       <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
-        Modifiez votre nom d'utilisateur et votre couleur d'affichage.
+        Modifiez votre profil
       </p>
       <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+        {error ? (
+          <p className="text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        ) : null}
         <InputField
           id="profile-email"
           label="Email"
@@ -53,7 +65,7 @@ export default function ProfilePage() {
         />
         <div className="flex flex-col gap-1">
           <span className="text-xs font-medium text-[var(--on-surface-variant)]">
-            Couleur d'affichage
+            Couleur d&apos;affichage
           </span>
           <div className="flex items-center gap-3">
             <input
@@ -72,7 +84,9 @@ export default function ProfilePage() {
             />
           </div>
         </div>
-        <Button type="submit">Enregistrer</Button>
+        <Button type="submit" disabled={pending}>
+          {pending ? "Enregistrement..." : "Enregistrer"}
+        </Button>
       </form>
     </div>
   );

@@ -1,14 +1,16 @@
 import { API_URL } from "./constants";
 import type { AuthSession } from "./types";
 
+type PublicUser = {
+  id: string;
+  email: string;
+  username: string;
+  accentColor: string;
+};
+
 type AuthResponse = {
   access_token: string;
-  user: {
-    id: string;
-    email: string;
-    username: string;
-    accentColor: string;
-  };
+  user: PublicUser;
 };
 
 export function mapAuthResponse(data: AuthResponse): AuthSession {
@@ -28,12 +30,7 @@ export async function fetchMe(accessToken: string) {
   if (!res.ok) {
     return null;
   }
-  return res.json() as Promise<{
-    id: string;
-    email: string;
-    username: string;
-    accentColor: string;
-  }>;
+  return res.json() as Promise<PublicUser>;
 }
 
 export async function postRegister(body: {
@@ -61,6 +58,24 @@ export async function postLogin(body: { email: string; password: string }) {
   });
   const data = (await res.json().catch(() => ({}))) as
     | AuthResponse
+    | { message?: string | string[]; statusCode?: number };
+  return { ok: res.ok, data } as const;
+}
+
+export async function patchProfile(
+  accessToken: string,
+  body: { username?: string; accentColor?: string },
+) {
+  const res = await fetch(`${API_URL}/auth/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json().catch(() => ({}))) as
+    | PublicUser
     | { message?: string | string[]; statusCode?: number };
   return { ok: res.ok, data } as const;
 }

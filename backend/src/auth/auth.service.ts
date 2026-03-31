@@ -1,9 +1,10 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { PublicUser } from '../users/public-user';
 import { UsersService } from '../users/users.service';
 import type { RegisterDto } from './dto/register.dto';
+import type { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class AuthService {
@@ -34,7 +35,7 @@ export class AuthService {
       throw new ConflictException('Email déjà utilisé');
     }
     if (await this.usersService.findByUsername(username)) {
-      throw new ConflictException('Pseudonyme déjà pris');
+      throw new ConflictException('Pseudo déjà pris');
     }
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const accentColor = dto.accentColor ?? '#5e5e60';
@@ -50,6 +51,28 @@ export class AuthService {
 
   login(user: PublicUser) {
     return this.issueTokens(user);
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new NotFoundException();
+    }
+    const username = dto.username?.trim();
+    if (username && username !== user.username) {
+      const existing = await this.usersService.findByUsername(username);
+      if (existing && existing.id !== userId) {
+        throw new ConflictException('Pseudo déjà pris');
+      }
+    }
+    const updated = await this.usersService.updateProfile(userId, {
+      username,
+      accentColor: dto.accentColor,
+    });
+    if (!updated) {
+      throw new NotFoundException();
+    }
+    return this.usersService.toPublic(updated);
   }
 
   private issueTokens(user: PublicUser) {

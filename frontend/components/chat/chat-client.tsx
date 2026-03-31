@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { io, type Socket } from "socket.io-client";
 import { useAuth } from "@/components/auth-context";
 import { MessageBubble } from "@/components/chat/message-bubble";
 import { TypingIndicator } from "@/components/chat/typing-indicator";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/lib/types";
+import { API_URL } from "@/lib/constants";
 const INITIAL_MESSAGES: ChatMessage[] = [];
 
 function toggleReactionOnMessage(
@@ -38,11 +40,62 @@ export function ChatClient() {
   const { session } = useAuth();
   const meId = session?.id ?? "local-user";
   const userName = session?.username ?? "Moi";
-  const userColor = session?.accentColor ?? "#5e5e60";
-
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [draft, setDraft] = useState("");
-  const [typingNames] = useState<string[]>([]);
+  const [typingNames, setTypingNames] = useState<string[]>([]);
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const typingRef = useRef(false);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
+  useEffect(() => {
+    if (!session?.accessToken) {
+      return;
+    }
+    const socket = io(API_URL, {
+      transports: ["websocket"],
+      auth: { token: session.accessToken },
+    });
+    socketRef.current = socket;
+    socket.on("connect", () => {
+      setConnected(true);
+      setError(null);
+      const hasDraft = draftRef.current.trim().length > 0;
+      if (hasDraft) {
+        socket.emit("chat:typing", { typing: true });
+        typingRef.current = true;
+      } else {
+        typingRef.current = false;
+      }
+    });
+    socket.on("disconnect", () => {
+      setConnected(false);
+    });
+    socket.on("connect_error", () => {
+      setConnected(false);
+      setError("Connexion au chat impossible");
+    });
+    socket.on("chat:history", (history: ChatMessage[]) => {
+      setMessages(history);
+    });
+    socket.on("chat:message", (message: ChatMessage) => {
+      setMessages((prev) => [...prev, message]);
+    });
+    socket.on("chat:typing", (names: string[]) => {
+      const me = session?.username;
+      setTypingNames(me ? names.filter((name) => name !== me) : names);
+    });
+    return () => {
+      if (socket.connected && typingRef.current) {
+        socket.emit("chat:typing", { typing: false });
+      }
+      socket.disconnect();
+      socketRef.current = null;
+      setConnected(false);
+    };
+  }, [session?.accessToken, session?.username]);
 
   const handleToggleReaction = useCallback(
     (messageId: string, emoji: string) => {
@@ -59,20 +112,23 @@ export function ChatClient() {
 
   const sendMessage = useCallback(() => {
     const text = draft.trim();
-    if (!text) {
+    if (!text || !socketRef.current?.connected) {
       return;
     }
-    const next: ChatMessage = {
-      id: `m-${Date.now()}`,
-      authorId: meId,
-      authorName: userName,
-      authorColor: userColor,
-      text,
-      reactions: [],
-    };
-    setMessages((prev) => [...prev, next]);
+    socketRef.current.emit("chat:typing", { typing: false });
+    typingRef.current = false;
+    socketRef.current.emit("chat:send", { text });
     setDraft("");
-  }, [draft, userName, userColor, meId]);
+  }, [draft]);
+
+  useEffect(() => {
+    const nextTyping = draft.trim().length > 0;
+    if (!socketRef.current?.connected || typingRef.current === nextTyping) {
+      return;
+    }
+    socketRef.current.emit("chat:typing", { typing: nextTyping });
+    typingRef.current = nextTyping;
+  }, [draft]);
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
@@ -81,6 +137,9 @@ export function ChatClient() {
           <h1 className="font-[family-name:var(--font-manrope)] text-lg font-semibold">
             Chat général
           </h1>
+          <p className="text-xs text-[var(--on-surface-variant)]">
+            {connected ? "Connecté" : "Déconnecté"}
+          </p>
         </div>
         <Link
           href="/rooms/new"
@@ -91,6 +150,9 @@ export function ChatClient() {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2 pt-2">
+        {error ? (
+          <p className="pb-2 text-sm text-red-600">{error}</p>
+        ) : null}
         {messages.length > 0 ? (
           <div>
             {messages.map((m) => (
@@ -125,7 +187,7 @@ export function ChatClient() {
             }}
             aria-label="Message"
           />
-          <Button type="button" onClick={sendMessage}>
+          <Button type="button" onClick={sendMessage} disabled={!connected}>
             Envoyer
           </Button>
         </div>

@@ -25,7 +25,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <p className="font-[family-name:var(--font-manrope)] text-sm font-semibold tracking-tight">
             Websocket Nest
           </p>
-          <p className="mt-1 truncate text-xs text-[var(--on-surface-variant)]">
+          <p
+            className="mt-1 truncate text-xs"
+            style={{
+              color: session?.accentColor ?? "var(--on-surface-variant)",
+            }}
+          >
             {session?.username}
           </p>
         </div>

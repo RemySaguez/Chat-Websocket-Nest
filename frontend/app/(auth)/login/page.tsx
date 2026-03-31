@@ -72,7 +72,6 @@ export default function LoginPage() {
         {pending ? "Connexion…" : "Se connecter"}
       </Button>
       <p className="text-center text-sm text-[var(--on-surface-variant)]">
-        Pas de compte ?{" "}
         <Link
           href="/register"
           className="text-[var(--primary)] underline decoration-[var(--outline-variant)]"

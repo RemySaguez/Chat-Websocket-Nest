@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Request,
   UnauthorizedException,
@@ -12,6 +13,7 @@ import type { PublicUser } from '../users/public-user';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -35,5 +37,14 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   me(@Request() req: { user: PublicUser }) {
     return req.user;
+  }
+
+  @Patch('me')
+  @UseGuards(AuthGuard('jwt'))
+  updateProfile(
+    @Request() req: { user: PublicUser },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(req.user.id, dto);
   }
 }

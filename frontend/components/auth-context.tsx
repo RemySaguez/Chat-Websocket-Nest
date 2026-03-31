@@ -10,14 +10,17 @@ import {
 } from "react";
 import type { AuthSession } from "@/lib/types";
 import { AUTH_SESSION_KEY } from "@/lib/constants";
-import { fetchMe } from "@/lib/auth-api";
+import { fetchMe, patchProfile } from "@/lib/auth-api";
 
 type AuthContextValue = {
   session: AuthSession | null;
   ready: boolean;
   login: (session: AuthSession) => void;
   logout: () => void;
-  updateProfile: (patch: Partial<AuthSession>) => void;
+  updateProfile: (patch: {
+    username?: string;
+    accentColor?: string;
+  }) => Promise<{ ok: boolean; error?: string }>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -37,6 +40,11 @@ function readStoredSession(): AuthSession | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [ready, setReady] = useState(false);
+
+  const applySession = useCallback((next: AuthSession) => {
+    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(next));
+    setSession(next);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -87,25 +95,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback((next: AuthSession) => {
-    sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(next));
-    setSession(next);
-  }, []);
+    applySession(next);
+  }, [applySession]);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(AUTH_SESSION_KEY);
     setSession(null);
   }, []);
 
-  const updateProfile = useCallback((patch: Partial<AuthSession>) => {
-    setSession((prev) => {
-      if (!prev) {
-        return prev;
+  const updateProfile = useCallback(
+    async (patch: { username?: string; accentColor?: string }) => {
+      if (!session) {
+        return { ok: false, error: "Session introuvable" };
       }
-      const merged = { ...prev, ...patch };
-      sessionStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(merged));
-      return merged;
-    });
-  }, []);
+      const { ok, data } = await patchProfile(session.accessToken, patch);
+      if (!ok || !("id" in data)) {
+        const msg = "message" in data ? data.message : undefined;
+        return {
+          ok: false,
+          error: Array.isArray(msg)
+            ? msg.join(", ")
+            : typeof msg === "string"
+              ? msg
+              : "Mise à jour impossible",
+        };
+      }
+      applySession({
+        accessToken: session.accessToken,
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        accentColor: data.accentColor,
+      });
+      return { ok: true };
+    },
+    [session, applySession],
+  );
 
   const value = useMemo(
     () => ({ session, ready, login, logout, updateProfile }),
