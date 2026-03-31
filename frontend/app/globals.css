@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+:root {
+  --surface: #f8f9fb;
+  --surface-low: #f1f4f7;
+  --surface-container: #eaeef2;
+  --surface-container-high: #e2e9ee;
+  --surface-incoming: #e2e9ee;
+  --primary: #5e5e60;
+  --primary-dim: #525254;
+  --on-primary: #f8f7f9;
+  --on-surface: #2b3438;
+  --on-surface-variant: #586065;
+  --outline-variant: #abb3b9;
+  --background: var(--surface);
+  --foreground: var(--on-surface);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-manrope);
+}
+
+body {
+  background: var(--surface);
+  color: var(--on-surface);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+.message-row {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 4rem;
+}
+
+.input-ghost {
+  box-shadow: inset 0 0 0 1px rgb(171 179 185 / 0.15);
+}
+
+.input-ghost:focus {
+  box-shadow: inset 0 0 0 1px rgb(115 124 129 / 1);
+  outline: none;
+}
