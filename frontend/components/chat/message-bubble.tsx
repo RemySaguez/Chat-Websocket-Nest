@@ -1,7 +1,7 @@
 import type { ChatMessage } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
-const QUICK_EMOJIS = ["👍", "❤️", "😂"];
+const QUICK_EMOJIS = ["🔥", "👍", "😂"];
 
 type MessageBubbleProps = {
   message: ChatMessage;

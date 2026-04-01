@@ -10,7 +10,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { logout, session } = useAuth();
 
   const linkClass = (href: string) => {
-    const active = pathname === href;
+    const active =
+      href === "/rooms" ? pathname.startsWith("/rooms") : pathname === href;
     return `block rounded-lg px-3 py-2 text-sm ${
       active
         ? "bg-[var(--surface-container-high)] text-[var(--on-surface)]"
@@ -38,8 +39,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/chat" className={linkClass("/chat")}>
             Chat général
           </Link>
-          <Link href="/rooms/new" className={linkClass("/rooms/new")}>
-            Nouveau salon
+          <Link href="/rooms" className={linkClass("/rooms")}>
+            Salons
           </Link>
           <Link href="/profile" className={linkClass("/profile")}>
             Profil

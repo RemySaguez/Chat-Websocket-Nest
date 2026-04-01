@@ -7,6 +7,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../users/user.entity';
+import { Room } from './room.entity';
 
 @Entity('chat_messages')
 export class ChatMessage {
@@ -22,6 +23,16 @@ export class ChatMessage {
 
   @Column({ type: 'text' })
   text: string;
+
+  @Column({ name: 'room_id', nullable: true })
+  roomId: string | null;
+
+  @ManyToOne(() => Room, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'room_id' })
+  room: Room | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  reactions: { emoji: string; userNames: string[] }[] | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

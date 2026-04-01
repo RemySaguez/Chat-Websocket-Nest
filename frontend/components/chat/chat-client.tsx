@@ -9,37 +9,24 @@ import { TypingIndicator } from "@/components/chat/typing-indicator";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/lib/types";
 import { API_URL } from "@/lib/constants";
+
 const INITIAL_MESSAGES: ChatMessage[] = [];
 
-function toggleReactionOnMessage(
-  msg: ChatMessage,
-  emoji: string,
-  userName: string,
-): ChatMessage {
-  const others = msg.reactions.filter((r) => r.emoji !== emoji);
-  const existing = msg.reactions.find((r) => r.emoji === emoji);
-  const hadUser = existing?.userNames.includes(userName);
-  const nextNames = existing
-    ? hadUser
-      ? existing.userNames.filter((u) => u !== userName)
-      : [...existing.userNames, userName]
-    : [userName];
-  const nextReaction =
-    nextNames.length > 0
-      ? [{ emoji, userNames: nextNames }]
-      : [];
-  return {
-    ...msg,
-    reactions: [...others, ...nextReaction].sort((a, b) =>
-      a.emoji.localeCompare(b.emoji),
-    ),
-  };
-}
+type ChatClientProps = {
+  roomId?: string | null;
+  title?: string;
+  linkHref?: string;
+  linkLabel?: string;
+};
 
-export function ChatClient() {
+export function ChatClient({
+  roomId = null,
+  title = "Chat général",
+  linkHref = "/rooms",
+  linkLabel = "Salons",
+}: ChatClientProps) {
   const { session } = useAuth();
   const meId = session?.id ?? "local-user";
-  const userName = session?.username ?? "Moi";
   const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
   const [draft, setDraft] = useState("");
   const [typingNames, setTypingNames] = useState<string[]>([]);
@@ -48,7 +35,10 @@ export function ChatClient() {
   const socketRef = useRef<Socket | null>(null);
   const typingRef = useRef(false);
   const draftRef = useRef(draft);
-  draftRef.current = draft;
+
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     if (!session?.accessToken) {
@@ -62,27 +52,50 @@ export function ChatClient() {
     socket.on("connect", () => {
       setConnected(true);
       setError(null);
+      if (roomId) {
+        setMessages(INITIAL_MESSAGES);
+        setTypingNames([]);
+        typingRef.current = false;
+        socket.emit("room:join", { roomId });
+        return;
+      }
       const hasDraft = draftRef.current.trim().length > 0;
+      typingRef.current = false;
       if (hasDraft) {
         socket.emit("chat:typing", { typing: true });
         typingRef.current = true;
-      } else {
-        typingRef.current = false;
       }
     });
     socket.on("disconnect", () => {
       setConnected(false);
+      setTypingNames([]);
     });
     socket.on("connect_error", () => {
       setConnected(false);
       setError("Connexion au chat impossible");
     });
+    socket.on("chat:error", (message: string) => {
+      setError(message);
+    });
     socket.on("chat:history", (history: ChatMessage[]) => {
+      setError(null);
       setMessages(history);
     });
     socket.on("chat:message", (message: ChatMessage) => {
       setMessages((prev) => [...prev, message]);
     });
+    socket.on(
+      "chat:reaction",
+      (payload: { messageId: string; reactions: ChatMessage["reactions"] }) => {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === payload.messageId
+              ? { ...m, reactions: payload.reactions }
+              : m,
+          ),
+        );
+      },
+    );
     socket.on("chat:typing", (names: string[]) => {
       const me = session?.username;
       setTypingNames(me ? names.filter((name) => name !== me) : names);
@@ -95,19 +108,16 @@ export function ChatClient() {
       socketRef.current = null;
       setConnected(false);
     };
-  }, [session?.accessToken, session?.username]);
+  }, [roomId, session?.accessToken, session?.username]);
 
   const handleToggleReaction = useCallback(
     (messageId: string, emoji: string) => {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId
-            ? toggleReactionOnMessage(m, emoji, userName)
-            : m,
-        ),
-      );
+      if (!socketRef.current?.connected) {
+        return;
+      }
+      socketRef.current.emit("chat:toggleReaction", { messageId, emoji });
     },
-    [userName],
+    [],
   );
 
   const sendMessage = useCallback(() => {
@@ -135,17 +145,17 @@ export function ChatClient() {
       <header className="flex shrink-0 items-center justify-between border-b border-[rgb(171_179_185/0.12)] px-4 py-3">
         <div>
           <h1 className="font-[family-name:var(--font-manrope)] text-lg font-semibold">
-            Chat général
+            {title}
           </h1>
           <p className="text-xs text-[var(--on-surface-variant)]">
             {connected ? "Connecté" : "Déconnecté"}
           </p>
         </div>
         <Link
-          href="/rooms/new"
+          href={linkHref}
           className="text-sm text-[var(--primary)] underline decoration-[var(--outline-variant)] underline-offset-2"
         >
-          Nouveau salon
+          {linkLabel}
         </Link>
       </header>
 

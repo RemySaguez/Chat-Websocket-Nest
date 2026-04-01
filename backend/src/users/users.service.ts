@@ -36,6 +36,12 @@ export class UsersService {
     });
   }
 
+  async listAll(): Promise<User[]> {
+    return this.usersRepository.find({
+      order: { username: 'ASC' },
+    });
+  }
+
   async create(data: {
     email: string;
     username: string;
