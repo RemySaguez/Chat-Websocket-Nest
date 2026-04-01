@@ -45,7 +45,6 @@ export function ChatClient({
       return;
     }
     const socket = io(API_URL, {
-      transports: ["websocket"],
       auth: { token: session.accessToken },
     });
     socketRef.current = socket;

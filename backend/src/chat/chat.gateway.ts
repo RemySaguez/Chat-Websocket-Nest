@@ -20,7 +20,6 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { JoinRoomDto } from './dto/join-room.dto';
 import { ToggleReactionDto } from './dto/toggle-reaction.dto';
-
 type JwtPayload = {
   sub: string;
   email: string;

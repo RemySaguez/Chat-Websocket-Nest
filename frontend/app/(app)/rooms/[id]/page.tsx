@@ -160,15 +160,11 @@ export default function RoomPage() {
           <h2 className="font-[family-name:var(--font-manrope)] text-lg font-semibold">
             Membres
           </h2>
-          <p className="mt-1 text-xs text-[var(--on-surface-variant)]">
-            Invitez des utilisateurs. L&apos;option historique s&apos;applique à cet ajout.
-          </p>
         </div>
 
         <form onSubmit={onAddMember} className="flex flex-col gap-3">
           <Button
             type="button"
-            variant="secondary"
             onClick={() => void onToggleUserPicker()}
             disabled={loadingUsers}
           >

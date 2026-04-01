@@ -41,9 +41,6 @@ export default function RoomsPage() {
           <h1 className="font-[family-name:var(--font-manrope)] text-xl font-semibold">
             Salons
           </h1>
-          <p className="mt-1 text-sm text-[var(--on-surface-variant)]">
-            Retrouvez vos salons privés et créez-en un nouveau.
-          </p>
         </div>
         <Link href="/rooms/new">
           <Button>Nouveau salon</Button>
@@ -63,14 +60,6 @@ export default function RoomsPage() {
               className="rounded-xl border border-[rgb(171_179_185/0.16)] bg-[var(--surface-container)] px-4 py-3 transition hover:bg-[var(--surface-container-high)]"
             >
               <p className="font-medium">{room.name}</p>
-              <p className="mt-1 text-xs text-[var(--on-surface-variant)]">
-                Créé le{" "}
-                {new Date(room.createdAt).toLocaleDateString("fr-FR", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                })}
-              </p>
             </Link>
           ))
         ) : (
